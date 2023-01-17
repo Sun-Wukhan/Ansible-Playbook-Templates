@@ -1,0 +1,29 @@
+
+---
+- name: Renew SSL Certificates from GoDaddy
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    certbot_email: your_email@example.com
+    certbot_domains:
+      - example.com
+      - www.example.com
+    certbot_webroot_path: /var/www/html
+ 
+  tasks:
+  - name: Install Certbot
+    package:
+      name: certbot
+      state: present
+ 
+  - name: Renew SSL Certificates
+    shell: certbot certonly --webroot -w {{ certbot_webroot_path }} -d {{ item }} --register-unsafely-without-email --agree-tos -n
+    with_items: "{{ certbot_domains }}"
+    register: certbot_result
+ 
+  - name: Reload Apache/Nginx
+    service:
+      name: apache2/nginx
+      state: restarted
+    when: certbot_result.changed

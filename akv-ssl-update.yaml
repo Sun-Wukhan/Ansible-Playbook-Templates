@@ -1,0 +1,26 @@
+- name: Update SSL Certificates from Keyvault to Windows VM
+  hosts: windows
+  vars:
+    resource_group: "resource_group_name"
+    keyvault_name: "keyvault_name"
+    certificate_name: "certificate_name"
+    vm_name: "vm_name"
+  tasks:
+  - name: Authenticate to Azure
+    azure_rm_common:
+      ad_user: "{{ client_id }}"
+      ad_password: "{{ client_secret }}"
+      subscription_id: "{{ subscription_id }}"
+      tenant: "{{ tenant_id }}"
+  - name: Retrieve SSL certificate from Keyvault
+    azure_rm_keyvault_secret:
+      keyvault_uri: "https://{{ keyvault_name }}.vault.azure.net"
+      name: "{{ certificate_name }}"
+    register: certificate
+  - name: Install SSL certificate on Windows VM
+    win_certificate:
+      cert_path: "{{ certificate.secret.value }}"
+      store_name: "My"
+      state: present
+      name: "{{ certificate_name }}"
+    delegate_to: "{{ vm_name }}"
